@@ -5,13 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.openplaud.app.data.model.V1RecordingDetail
 import com.openplaud.app.data.repository.PreferencesRepository
 import com.openplaud.app.data.repository.RecordingRepository
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 data class DetailUiState(
     val recording: V1RecordingDetail? = null,
@@ -23,8 +21,7 @@ data class DetailUiState(
     val playbackDuration: Long = 0L
 )
 
-@HiltViewModel
-class RecordingDetailViewModel @Inject constructor(
+class RecordingDetailViewModel(
     private val repository: RecordingRepository,
     private val prefs: PreferencesRepository
 ) : ViewModel() {
@@ -35,37 +32,18 @@ class RecordingDetailViewModel @Inject constructor(
     fun loadRecording(id: String) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-
             val baseUrl = prefs.getBaseUrl() ?: "http://134.175.249.19"
-            val apiKey = prefs.getApiKey() ?: ""
-
             repository.getRecordingDetail(id).onSuccess { detail ->
-                val audioUrl = "$baseUrl${detail.links.audio}"
                 _state.update {
-                    it.copy(
-                        recording = detail,
-                        isLoading = false,
-                        audioUrl = audioUrl
-                    )
+                    it.copy(recording = detail, isLoading = false, audioUrl = "$baseUrl${detail.links.audio}")
                 }
             }.onFailure { e ->
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        error = e.localizedMessage ?: "Failed to load"
-                    )
-                }
+                _state.update { it.copy(isLoading = false, error = e.localizedMessage) }
             }
         }
     }
 
     fun onPlaybackStateChanged(isPlaying: Boolean, position: Long, duration: Long) {
-        _state.update {
-            it.copy(
-                isPlaying = isPlaying,
-                playbackPosition = position,
-                playbackDuration = duration
-            )
-        }
+        _state.update { it.copy(isPlaying = isPlaying, playbackPosition = position, playbackDuration = duration) }
     }
 }

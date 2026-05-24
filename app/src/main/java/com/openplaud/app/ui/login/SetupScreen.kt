@@ -13,15 +13,17 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.openplaud.app.LocalApi
+import com.openplaud.app.LocalPrefs
 import com.openplaud.app.ui.theme.PlaudColors
 import com.openplaud.app.ui.theme.PlaudTheme
 
 @Composable
-fun SetupScreen(
-    onConfigured: () -> Unit,
-    viewModel: SetupViewModel = hiltViewModel()
-) {
+fun SetupScreen(onConfigured: () -> Unit) {
+    val api = LocalApi.current
+    val prefs = LocalPrefs.current
+    val viewModel: SetupViewModel = viewModel(factory = SetupViewModelFactory(prefs, api))
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
@@ -32,40 +34,20 @@ fun SetupScreen(
         }
     }
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = PlaudColors.surface
-            )
+            modifier = Modifier.fillMaxWidth().padding(24.dp),
+            colors = CardDefaults.cardColors(containerColor = PlaudColors.surface)
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Title
-                Text(
-                    text = "Plaud",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = PlaudColors.primary
-                )
-
-                Text(
-                    text = "Connect your OpenPlaud server",
-                    fontSize = 14.sp,
-                    color = PlaudColors.textSecondary
-                )
-
+                Text("Plaud", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = PlaudColors.primary)
+                Text("Connect your OpenPlaud server", fontSize = 14.sp, color = PlaudColors.textSecondary)
                 Divider(color = PlaudTheme.colors.surfaceVariant)
 
-                // Server URL
                 OutlinedTextField(
                     value = uiState.serverUrl,
                     onValueChange = viewModel::onServerUrlChange,
@@ -73,18 +55,9 @@ fun SetupScreen(
                     placeholder = { Text("http://134.175.249.19") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = PlaudColors.textPrimary,
-                        unfocusedTextColor = PlaudColors.textPrimary,
-                        focusedBorderColor = PlaudColors.primary,
-                        unfocusedBorderColor = PlaudTheme.colors.surfaceVariant,
-                        focusedLabelColor = PlaudColors.primary,
-                        unfocusedLabelColor = PlaudColors.textSecondary
-                    )
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
                 )
 
-                // API Key
                 OutlinedTextField(
                     value = uiState.apiKey,
                     onValueChange = viewModel::onApiKeyChange,
@@ -92,53 +65,20 @@ fun SetupScreen(
                     placeholder = { Text("op_...") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = PlaudColors.textPrimary,
-                        unfocusedTextColor = PlaudColors.textPrimary,
-                        focusedBorderColor = PlaudColors.primary,
-                        unfocusedBorderColor = PlaudTheme.colors.surfaceVariant,
-                        focusedLabelColor = PlaudColors.primary,
-                        unfocusedLabelColor = PlaudColors.textSecondary
-                    )
+                    visualTransformation = PasswordVisualTransformation()
                 )
 
-                // Status
-                if (uiState.error != null) {
-                    Text(
-                        text = uiState.error!!,
-                        color = PlaudColors.error,
-                        fontSize = 13.sp
-                    )
-                }
+                if (uiState.error != null) Text(uiState.error!!, color = PlaudColors.error, fontSize = 13.sp)
+                if (uiState.isLoading) CircularProgressIndicator(color = PlaudColors.primary, modifier = Modifier.size(24.dp))
 
-                if (uiState.isLoading) {
-                    CircularProgressIndicator(
-                        color = PlaudColors.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-
-                // Connect button
                 Button(
                     onClick = viewModel::connect,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = PlaudColors.primary
-                    ),
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PlaudColors.primary),
                     enabled = uiState.serverUrl.isNotBlank() && uiState.apiKey.isNotBlank() && !uiState.isLoading
-                ) {
-                    Text("Connect", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                }
+                ) { Text("Connect", fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
 
-                // Help text
-                Text(
-                    text = "Get your API key from OpenPlaud Settings → API Keys",
-                    fontSize = 12.sp,
-                    color = PlaudColors.textSecondary
-                )
+                Text("Get your API key from OpenPlaud Settings → API Keys", fontSize = 12.sp, color = PlaudColors.textSecondary)
             }
         }
     }

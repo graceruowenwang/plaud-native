@@ -4,13 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.openplaud.app.data.api.OpenPlaudApi
 import com.openplaud.app.data.repository.PreferencesRepository
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 data class SetupUiState(
     val serverUrl: String = "http://134.175.249.19",
@@ -20,8 +18,7 @@ data class SetupUiState(
     val error: String? = null
 )
 
-@HiltViewModel
-class SetupViewModel @Inject constructor(
+class SetupViewModel(
     private val prefs: PreferencesRepository,
     private val api: OpenPlaudApi
 ) : ViewModel() {
@@ -32,12 +29,8 @@ class SetupViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             val savedKey = prefs.getApiKey()
-            val savedUrl = prefs.getBaseUrl()
-            if (!savedKey.isNullOrBlank() && !savedUrl.isNullOrBlank()) {
-                _uiState.update {
-                    it.copy(apiKey = savedKey, serverUrl = savedUrl)
-                }
-                // Auto-verify saved credentials
+            if (!savedKey.isNullOrBlank()) {
+                _uiState.update { it.copy(apiKey = savedKey) }
                 verify()
             }
         }
@@ -55,7 +48,6 @@ class SetupViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             prefs.setApiKey(_uiState.value.apiKey)
-            prefs.setBaseUrl(_uiState.value.serverUrl.trimEnd('/'))
             verify()
         }
     }
@@ -67,18 +59,12 @@ class SetupViewModel @Inject constructor(
                 _uiState.update { it.copy(isLoading = false, isReady = true) }
             } else {
                 _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = "Auth failed (${response.code()}). Check your API key."
-                    )
+                    it.copy(isLoading = false, error = "Auth failed (${response.code()})")
                 }
             }
         } catch (e: Exception) {
             _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    error = "Connection failed: ${e.localizedMessage ?: "Unknown error"}"
-                )
+                it.copy(isLoading = false, error = "Connection failed: ${e.localizedMessage}")
             }
         }
     }
