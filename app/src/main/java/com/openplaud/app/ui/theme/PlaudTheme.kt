@@ -30,6 +30,7 @@ object PlaudTheme {
 object PlaudColors {
     val background = Color(0xFF0F172A)
     val surface = Color(0xFF1E293B)
+    val surfaceVariant = Color(0xFF334155)
     val surfaceLight = Color(0xFF334155)
     val primary = Color(0xFF6366F1)
     val accent = Color(0xFF22D3EE)

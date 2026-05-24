@@ -8,6 +8,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -32,17 +33,18 @@ object AppModule {
             level = HttpLoggingInterceptor.Level.BODY
         }
 
+        // Pre-fetch credentials on creation (blocking is OK in DI initialization)
+        val apiKey = runBlocking { prefs.getApiKey() }
+        val sessionCookie = runBlocking { prefs.getSessionCookie() }
+
         return OkHttpClient.Builder()
             .addInterceptor(logging)
             .addInterceptor { chain ->
                 val original = chain.request()
-                val apiKey = prefs.getApiKey()
                 val builder = original.newBuilder()
                 if (!apiKey.isNullOrBlank()) {
                     builder.header("Authorization", "Bearer $apiKey")
                 }
-                // Inject session cookie if available
-                val sessionCookie = prefs.getSessionCookie()
                 if (!sessionCookie.isNullOrBlank()) {
                     builder.header("Cookie", sessionCookie)
                 }
