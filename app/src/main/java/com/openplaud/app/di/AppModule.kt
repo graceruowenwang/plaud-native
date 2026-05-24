@@ -33,15 +33,14 @@ object AppModule {
             level = HttpLoggingInterceptor.Level.BODY
         }
 
-        // Pre-fetch credentials on creation (blocking is OK in DI initialization)
-        val apiKey = runBlocking { prefs.getApiKey() }
-        val sessionCookie = runBlocking { prefs.getSessionCookie() }
-
         return OkHttpClient.Builder()
             .addInterceptor(logging)
             .addInterceptor { chain ->
                 val original = chain.request()
                 val builder = original.newBuilder()
+                // Read credentials fresh on EVERY request (not cached at startup)
+                val apiKey = runBlocking { prefs.getApiKey() }
+                val sessionCookie = runBlocking { prefs.getSessionCookie() }
                 if (!apiKey.isNullOrBlank()) {
                     builder.header("Authorization", "Bearer $apiKey")
                 }
